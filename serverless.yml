@@ -1,0 +1,66 @@
+# Welcome to serverless. Read the docs
+# https://serverless.com/framework/docs/
+
+# Parameter substitution - opt means cli params
+
+# The `service` block is the name of the service
+service: step-functions-hello-world
+
+plugins:
+  - serverless-step-functions
+  - serverless-pseudo-parameters
+
+# The `provider` block defines where your service will be deployed
+provider:
+  name: aws
+  runtime: nodejs8.10
+  profile: serverless
+  stage: ${opt:stage, file(config.json):stage, 'dev'}
+  region: ${opt:region, file(config.json):region, 'eu-west-2'}  
+
+package:
+  individually: true
+  exclude:
+    - "**/*"  # quotes(") are needed
+
+# The `functions` block defines what code to deploy
+functions:
+  helloWorld:
+    handler: lambdas/node/handler.helloWorld
+    name: ${self:provider.stage}-${self:service}-helloWorldNode
+    package:
+      include:
+        - lambdas/node/handler.js
+        - lambdas/node/node_modules/**
+  helloWorldPie:
+    handler: lambdas/python/piehandler.hello
+    name: ${self:provider.stage}-${self:service}-helloWorldPie
+    runtime: python3.6
+    package:
+      include:
+        - lambdas/python/piehandler.py
+
+# Step functions definition
+stepFunctions:
+  stateMachines:
+    holaMundoMundial:
+      name: ${self:provider.stage}-${self:service}
+      events:
+        - http:
+            path: hello-world
+            method: GET
+            cors: true
+      definition:
+        Comment: "A Hello World example of the Amazon States Language using an AWS Lambda Function"
+        StartAt: HelloWorldNode
+        States:
+          HelloWorldNode:
+            Type: Task
+            Resource: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:functions.helloWorld.name}
+            ResultPath: "$.hwNodeResult"
+            Next: HelloWorldPython
+          HelloWorldPython:
+            Type: Task
+            Resource: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:functions.helloWorldPie.name}
+            ResultPath: "$.hwPythonResult"
+            End: true
