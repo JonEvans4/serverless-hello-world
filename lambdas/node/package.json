@@ -12,6 +12,7 @@
   "author": "Jonthan Evans",
   "license": "ISC",
   "dependencies": {
+    "aws-sdk": "^2.225.1",
     "axios": "^0.18.0"
   }
 }
