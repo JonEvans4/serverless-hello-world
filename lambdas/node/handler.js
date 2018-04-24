@@ -3,7 +3,6 @@ const axios = require('axios')
 module.exports.helloWorld = (event, context, callback) => {
   axios.get('https://xkcd.com/info.0.json')
     .then(responseBody => {
-      console.log(responseBody.data)
 
       const response = {
         statusCode: 200,

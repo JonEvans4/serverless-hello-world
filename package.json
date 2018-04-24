@@ -5,7 +5,6 @@
   "main": "none.js",
   "dependencies": {},
   "devDependencies": {
-    "aws-sdk-mock": "^1.7.0",
     "jest": "^22.4.3",
     "serverless-pseudo-parameters": "^1.4.2",
     "serverless-step-functions": "^1.4.0"

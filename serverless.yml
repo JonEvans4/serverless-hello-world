@@ -16,7 +16,16 @@ provider:
   runtime: nodejs8.10
   profile: serverless
   stage: ${opt:stage, file(config.json):stage, 'dev'}
-  region: ${opt:region, file(config.json):region, 'eu-west-2'}  
+  region: ${opt:region, file(config.json):region, 'eu-west-2'}
+  # Modify default role 
+  # StepFunctions write all resources
+  # StartExecution, ListStateMachines
+  iamRoleStatements:
+      -  Effect: "Allow"
+         Action:
+           - "states:StartExecution"
+           - "states:ListStateMachines"
+         Resource: "*"
 
 package:
   individually: true
@@ -39,6 +48,15 @@ functions:
     package:
       include:
         - lambdas/python/piehandler.py
+  triggerNext:
+    handler: lambdas/node/sfTrigger.callStepFunction
+    name: ${self:provider.stage}-${self:service}-triggerNext
+    environment:
+      stepFunctionName: ArithmeticTest
+    package:
+      include:
+        - lambdas/node/sfTrigger.js
+        - lambdas/node/node_modules/**
 
 # Step functions definition
 stepFunctions:
@@ -48,7 +66,7 @@ stepFunctions:
       events:
         - http:
             path: hello-world
-            method: GET
+            method: POST
             cors: true
       definition:
         Comment: "A Hello World example of the Amazon States Language using an AWS Lambda Function"
@@ -63,4 +81,9 @@ stepFunctions:
             Type: Task
             Resource: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:functions.helloWorldPie.name}
             ResultPath: "$.hwPythonResult"
+            Next: TriggerStepFunction
+          TriggerStepFunction:
+            Type: Task
+            Resource: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:functions.triggerNext.name}
+            ResultPath: "$.startNextSFResult"
             End: true
